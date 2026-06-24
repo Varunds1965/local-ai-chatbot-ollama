@@ -1,39 +1,39 @@
-from langchain_core.messages import HumanMessage
-from langchain_ollama import ChatOllama
-from langchain.tools import tool
-from langgraph.prebuilt import create_react_agent
+import streamlit as st
+import os
 from dotenv import load_dotenv
+from langchain_groq import ChatGroq
 
 load_dotenv()
-@tool
-def calculator(a: float, b: float) -> str:
-    """Useful for basic arithmetic calculations on numbers"""
-    print("The tool has been called.")
-    return f"sum of {a} and {b} is {a + b}"
-def main():
-    model = ChatOllama(model="qwen3:latest",temperature=0)
-    tools = [calculator]
-    agent_executor = create_react_agent(model, tools) 
 
-    print("Welcome to the ReAct Agent! Type 'exit' to quit.")
-    print("You can ask me anything, and I'll try to help you with my reasoning abilities.")
+st.set_page_config(
+    page_title="AI Chatbot",
+    page_icon="🤖",
+    layout="centered"
+)
 
-    while True:
-        user_input = input("\nYou: ").strip()
-        
-        if user_input == "exit":
-            print("Goodbye!")
-            break
-        
-        print("\nAssistant: ", end="")
-        for chunk in agent_executor.stream(
-            {"messages": [HumanMessage(content=user_input)]}
-        ):
-            if "agent" in chunk and "messages" in chunk["agent"]:
-                for message in chunk["agent"]["messages"]:
-                    print(message.content, end="")
-        print()  # Print a newline after the response is complete
+st.title("🤖 AI Chatbot")
+st.markdown(
+    "Ask me anything and get AI-powered responses."
+)
 
-if __name__ == "__main__":
-    main()
+user_input = st.text_input("Enter your question")
+ask = st.button("Ask")
 
+if ask and user_input:
+    try:
+        st.write("Sending question to Groq...")
+
+        llm = ChatGroq(
+            model="llama-3.3-70b-versatile",
+            groq_api_key=os.getenv("GROQ_API_KEY"),
+            temperature=0
+        )
+
+        response = llm.invoke(user_input)
+
+        st.write("Received response from Groq.")
+        st.markdown("### Response")
+        st.markdown(response.content)
+
+    except Exception as e:
+        st.error(f"An error occurred: {str(e)}")
